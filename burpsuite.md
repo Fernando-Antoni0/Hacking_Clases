@@ -1,4 +1,4 @@
-Actividad con Burpsuite
+Actividad con Burpsuite--- Todo esto es con fines educativos!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 
 Primero en Burpsuite nos vamos a la seccion de Proxy, eso se encuentra en la parte de arriba, dentro de este
 vamos a configuracion para ver que direccion queremos utilizar, en este caso estamos en localhost asi que ahi

